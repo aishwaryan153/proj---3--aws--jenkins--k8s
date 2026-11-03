@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proj3-deployment
+  namespace: web-apps
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: proj3
+  template:
+    metadata:
+      labels:
+        app: proj3
+    spec:
+      containers:
+        - name: proj3-container
+          image: aishwaryalaxmi0599/proj3:latest
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: proj3-config
+            - secretRef:
+                name: proj3-secret
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
