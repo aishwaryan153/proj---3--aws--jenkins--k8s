@@ -1,0 +1,104 @@
+9. Question 9/20 – Kubernetes Service & Networking Troubleshooting
+Intermediate–Advanced
+Scenario
+You deployed your Flask application on EKS.
+- 3 Pods are running.
+- Deployment status shows 3/3 Available.
+- Kubernetes Service is created successfully.
+- AWS LoadBalancer DNS is generated.
+- But when you open the DNS URL, you get:
+      503 Service Temporarily Unavailable
+
+
+Your Service YAML:
+apiVersion: v1
+kind: Service
+metadata:
+  name: proj3-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: proj3
+  ports:
+    - port: 80
+      targetPort: 5000
+
+
+Your interview questions
+1. Pods are running, but the application returns 503. What are the possible reasons?
+A: in aws check : if security groups are blocking any traffic, check target ports are healthy or no, 
+   in k8s check: check readiness probe, check end points ( kubectl get endpoints proj3-cluster -n web-apps), check svc )kubectl descrive svc proj3-svc, check if 
+                application is listrning on port 5000, check if service selector matches the pod labels (kubectl get pods --show-labels -n web-apps)
+
+2. How would you check whether your Service is correctly connected to your Pods? Give me the exact kubectl commands.
+A: we will check the end points
+    command: kubectl get endpoints proj3-svc -n web-apps
+             then we can see the ip address of its selected pod
+
+3. Suppose your Deployment has this label:
+labels:
+  app: flask-app
+
+
+But your Service selector is:
+selector:
+  app: proj3
+
+
+What happens? How would you fix it?
+
+A: then dep and service wont be attached to each other, we needto edit the service file and change label to flask-app
+
+4. Explain the traffic flow when a user accesses your LoadBalancer DNS. Start from the browser and explain how the request reaches your Flask container on port 5000.
+A: user --> load balancer dns --> worker node --> k8s service --> flask pod: 5000 container port
+
+5. Suppose your application works using kubectl port-forward, but doesn't work through the LoadBalancer. How would you troubleshoot the issue?
+Bonus – Real interview follow-up
+What's the difference between:
+- Liveness Probe
+- Readiness Probe
+- Startup Probe
+A: Liveness probe: checks if the application is alive. if it fails repetedly then restart container
+   Readiness probe: checks if application is ready to recieve traffic. if it fails remove it from svc end points
+   Startup Probe: It checks if the application has finished starting, protects the applications from liveness and readiness probes
+
+------------------------------------------------------------------------
+
+10. Scenario:
+
+Your Flask application runs on EKS with:
+- 2 worker nodes.
+- 3 application Pods.
+- HPA configured with 70% CPU utilization.
+- Traffic suddenly increases significantly.
+The HPA tries to scale from 3 Pods to 8 Pods, but 3 new Pods remain in Pending status.
+
+Answer these:
+
+1. What is HPA, and how does it decide when to scale Pods?
+A: Horizontal pod auto scaler. it monitors the cpu and memory metrics which it recieves from the metrics server. it compares the actual utilization against the target 
+   utilization and increase or decreases pods accordingly. It calculates the desired replica count based on the current metric and target.
+
+2. Why might the new Pods remain in Pending status even though HPA requested more replicas?
+A: reached max pod capacity, insufficient cpu and memory, taints or tolerations dont match
+
+3. What is the difference between HPA and Cluster Autoscaler?
+A: hpa: scales pods, works at application level, increases/decreases replicas
+   asg: scales nodes, works at infra level, adds/removes nodes
+    If the existing nodes cannot accommodate those additional Pods, Cluster Autoscaler can request additional nodes, provided the node group is configured to scale.
+
+4. How would you troubleshoot Pending Pods? Give me the commands.
+A: kubectl get pods -n web-apps
+   kubectl describe pod <pod-name> -n web-apps
+    check for the events.
+   kubectl top nodes
+   kubectl top pods -n web-apps
+
+5. Suppose your nodes have insufficient CPU and memory. How would you solve this problem in EKS?
+A: by using horizontal pod autoscaling. attaching volume is not solution as ebs volume is for storage and cpu is for compute resources. 
+   we can solve by: adding more worker nodes, increase instance size from t3.small to t3.medium
+   Review Pod CPU and memory requests, Optimize application resource consumption, Reduce unnecessary workloads if resources are being wasted.
+
+Bonus: What's the difference between CPU requests and CPU limits in Kubernetes?
+A: requests: Minimum CPU resource requested for scheduling, Used for scheduling decisions
+   limits: Maximum CPU resource the container can use, If the container exceeds its memory limit, it can be OOMKilled.
