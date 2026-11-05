@@ -42,7 +42,38 @@ A:  kubectl get pods -n web-apps
 A: check pod status, check pod logs, inspect the events, check /health endpoints, check service end points, check aws lb target health
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+Question 2 – Kubernetes Probes
+Your Flask application is deployed on EKS with 2 replicas.
 
+You notice that:
+- Pods show Running.
+- One Pod is 0/1 Ready.
+- The other Pod is 1/1 Ready.
+- Users are experiencing intermittent application failures.
+
+One pod can work successfully nd other cannot even though they have same configuration because same configuration does not guarantee the same runtime condition.
+Answer these five interview questions:
+1. What could cause one Pod to be Running but NotReady?
+A: it has not passed readiness probe. application is un-healthy
+
+2. How do you check why its readiness probe is failing?
+A: we check pod events
+   kubectl describe pod <pod-name> -n web-apps
+   kubectl logs <pod-name> -n web-apps
+   kubectl get events -n web-apps --sort-by=.lastTimestamp
+
+3. What is the difference between readiness, liveness, and startup probes?
+A: Probe	Purpose
+   Readiness	Checks whether Pod can receive traffic
+   Liveness	Checks whether container should be restarted
+   Startup	Checks whether application has completed startup
+    One important detail: A startup probe protects slow-starting applications by preventing liveness and readiness probes from running until startup succeeds.
+
+4. If the readiness probe fails, will Kubernetes restart the container?
+A: if readiness probe fails then pod is marked not ready and traffic is not sent to the pod. k8s doesnt restart if readiness probe fails
+
+5. If the liveness probe fails repeatedly, what exactly happens?
+A: Yes! Kubernetes restarts the affected container after the configured failure threshold is reached. we mention the failure threshold in the code. 
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
