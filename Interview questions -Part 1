@@ -1,3 +1,152 @@
+Question 5/20 – Kubernetes HPA under pressure
+Challenging · 3–4 years level
+Scenario:
+
+Your Flask application is running on EKS.
+
+Your HPA configuration:
+- Minimum replicas: 2
+- Maximum replicas: 6
+- Target CPU utilization: 50%
+Suddenly, application traffic increases and CPU utilization reaches 90%.
+
+However, HPA still shows only 2 replicas.
+
+Your worker nodes also have limited CPU and memory.
+
+Answer these questions:
+1. What would you investigate first? Which Kubernetes commands would you execute?
+A:  kubectl get po -o wide -n web-apps
+    kubectl describe po pod-name -n web-apps
+    kubectl get hpa -n web-apps
+    kubectl describe hpa -n web-apps
+    
+
+2. Why might HPA fail to increase the number of Pods even when CPU utilization reaches 90%?
+3. Suppose HPA requests 6 Pods, but your cluster has insufficient CPU and memory. What happens?
+4. How would you solve this problem without simply increasing the HPA maximum replicas to 10?
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Question 6/20 – Worker Node Failure in EKS
+Advanced troubleshooting
+Scenario:
+
+Your EKS cluster has:
+- 2 worker nodes (t3.small)
+- 3 application Pods
+- HPA minimum replicas: 2
+- HPA maximum replicas: 6
+- CPU target: 50%
+Suddenly, one worker node crashes.
+
+The remaining node is running two application Pods.
+
+Answer these questions:
+1. What happens to the Pods that were running on the failed worker node?
+A: out of the 2 worker nodes, if 1 node failes then k8s will detect it through node heart beats and marks the node not ready and the pods which were on the node1 
+   will be un-available and then the replacement pods are created in node 2 if the sufficient resources are available 
+   Deployments maintain the desired number of replicas through ReplicaSets.
+
+2. Will Kubernetes automatically create replacement Pods? Explain how.
+A: yes k8s will create new replacement pods to match the desired state of the replica set. how means: if k8s detects a node failure, then it marks the pods 
+   on the node unavailable, and now replica set notices that there are few pods, so it will create new pods and schefuler places them on healthy nodes
+   
+3. Will HPA automatically increase the number of replicas because a worker node crashed?
+A: no as hpa is for scaling pods. not for worker nodes. this is done by deployment, replica set and asg 
+
+4. How would you ensure your application remains available even if one worker node fails?
+A: to ensure availability: we will try to have worker nodes in diff availability zones, spare cpu and memory on healthy nodes, pod distrubution in worker nodes, 
+                           asg implementation
+
+5. Which Kubernetes feature would you use to distribute Pods across different worker nodes?
+A: Pod anti affinity
+   suppose we have 3 pods, without distribution rules k8s can schedule all pods on one node. to avoid this we use pod-anti affinity to distribute pods accross nodes.
+   in the deployment file we configure this pod affinity rules.
+
+Bonus: Explain the difference between Pod anti-affinity and topology spread constraints.
+A: Pod affinity: avoids placing matching pods together, uses affinity rules, Don't put two matching Pods on the same node.
+   Topology spread: distributes pods are evenly as possible or in different availability zones
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Question 7/20 – Kubernetes Pod troubleshooting
+Intermediate–Advanced
+Scenario:
+
+You deployed your Flask application on EKS using Jenkins.
+
+After deployment, you notice:
+NAME              READY   STATUS
+proj3-pod         0/1     CrashLoopBackOff
+
+When you check the logs:
+KeyError: 'DB_HOST'
+
+Answer these:
+1. What does CrashLoopBackOff mean? Why might this error occur?
+A: crash loop backoff means container is crashing repetedly. error shows db-host means the config map is not correctly linked so thats why container is unavble tostart. 
+   so configure the config map correctly, Deployment references the wrong ConfigMap., 
+
+2. How would you troubleshoot this issue? Which commands would you use?
+A:    kubectl describe pod <pod-name> -n web-apps
+      kubectl logs <pod-name> -n web-apps
+      kubectl logs <pod-name> -n web-apps --previous
+      kubectl get configmap -n web-apps
+      kubectl describe configmap app-config -n web-apps
+
+3. Where should you configure the DB_HOST environment variable?
+A: in configmap.yaml file
+
+4. What is the difference between ConfigMap and Secret?
+A: config map is for storing less sensitive data, secrets are for sensitive data. they are base64 encoded by k8s. not encrypted
+
+5. If you update a ConfigMap, will the running Pods automatically restart?
+A: When we update a ConfigMap, Kubernetes does not automatically restart Pods that consume it through environment variables. Environment variables are loaded 
+  during container startup. Therefore, we need to trigger a rolling restart using kubectl rollout restart deployment. If the ConfigMap is mounted as a volume, 
+  Kubernetes eventually updates the mounted files, provided subPath isn't used.
+
+Bonus: What happens if your Deployment references a ConfigMap that doesn't exist?
+A: throws config map ref not found error
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+8. Question 8/20 – ConfigMap & Secret troubleshooting
+Intermediate–Advanced
+Scenario:
+Your Flask application requires an environment variable:
+DB_HOST
+
+But after deployment, your Pods show:
+CrashLoopBackOff
+
+Application logs:
+Error: DB_HOST environment variable not found
+
+Answer these:
+1. Where would you configure DB_HOST in Kubernetes?
+A: ill configure this in config-maps.yaml file. ill give the key value pair there and then ill give the redirection that us config map ref in dep.yaml file under
+   container
+
+2. What's the difference between ConfigMap and Secret?
+A: config map is for storing less sensitive data, secrets are for sensitive data. they are base64 encoded by k8s. not encrypted
+
+3. Suppose you update a ConfigMap. Will running Pods automatically restart and load the new value?
+A: to update a config map, go to the configmap.yaml file and edit the value and apply the file. then give rollout status command to check if pods are updated.
+  When we update a ConfigMap, Kubernetes does not automatically restart Pods that consume it through environment variables. Environment variables are loaded 
+  during container startup. Therefore, we need to trigger a rolling restart using kubectl rollout restart deployment. If the ConfigMap is mounted as a volume, 
+  Kubernetes eventually updates the mounted files, provided subPath isn't used.
+
+4. How would you make Jenkins deploy the latest ConfigMap whenever you run your pipeline?
+A: in pipeline give apply -f dep.yaml command, apply -f confoig map.yaml command
+   You should execute ConfigMap before Deployment
+
+5. What happens if your Deployment references a ConfigMap that doesn't exist?
+A: it will throw an error that config map ref not found
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 9. Question 9/20 – Kubernetes Service & Networking Troubleshooting
 Intermediate–Advanced
 Scenario
@@ -62,7 +211,7 @@ A: Liveness probe: checks if the application is alive. if it fails repetedly the
    Readiness probe: checks if application is ready to recieve traffic. if it fails remove it from svc end points
    Startup Probe: It checks if the application has finished starting, protects the applications from liveness and readiness probes
 
-------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 10. Scenario:
 
