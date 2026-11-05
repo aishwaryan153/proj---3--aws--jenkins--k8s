@@ -1,0 +1,137 @@
+Q11. Jenkins + Kubernetes RBAC troubleshooting
+Target: 3–4 years experience
+Scenario:
+
+Your Jenkins pipeline successfully:
+- Builds the Docker image.
+- Pushes the image to Docker Hub.
+- Connects to your EKS cluster.
+But deployment fails with this error:
+Error from server (Forbidden):
+User "system:serviceaccount:web-apps:jenkins-deployer"
+cannot create resource "deployments"
+in API group "apps"
+in the namespace "web-apps"
+
+
+Answer these five questions:
+1. What is the difference between authentication and authorization?
+A: Authentication is authority to login and authorization is giving authority to work. authentication checks identity and authorization checks permissions
+
+2. What is a Kubernetes ServiceAccount, and why does Jenkins need one?
+A: A Kubernetes ServiceAccount provides an identity for applications or automated processes that need to interact with the Kubernetes API. In our project, 
+   Jenkins uses a ServiceAccount identity to authenticate with EKS and perform deployment operations.
+
+3. What are Role and RoleBinding? How are they related?
+A: A Role defines permissions within a particular namespace.
+   A RoleBinding connects that Role to a user, group or ServiceAccount.
+   A ClusterRole and ClusterRoleBinding are used for broader cluster-level permissions.
+
+4. How would you troubleshoot this Forbidden error? Mention commands if possible.
+A: ill check sa name, api group and namespace but most importantly ill check if the sa has the permissions to create the deployment
+   Command: kubectl auth can-i create deployments --as=system:serviceaccount:web-apps:jenkins-deployer -n web-apps
+
+5. Why should we give Jenkins only the permissions it needs instead of cluster-admin access?
+A: we must always follow the principal of least privilige. we should only give those permissions which are needed. If the system is hacked,
+   a hacker can misuse admin permissions by changing or deleting applications
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q12. Jenkins EC2 → EKS authentication
+Target: 3–4 years experience
+Scenario:
+
+Your Jenkins server runs on an AWS EC2 instance, and your Kubernetes cluster is EKS.
+
+Your Jenkins pipeline needs to deploy your Flask application to EKS.
+
+Answer these five questions:
+1. How does Jenkins connect to an EKS cluster?
+A: jenkins conects to eks cluster using end point,token and certificate. k8s then authenticates these and using role and rolebinding it determines what jenkins can do
+
+2. What is the EKS API endpoint?
+A: It is the HTTPS endpoint of our k8s api server. its the address that jenkins sends k8s requests to.
+
+3. What is the purpose of the EKS CA certificate?
+A: it helps jenkins auhenticate k8s and makes sure that jenkins communicates with the genuine api server of k8s.
+
+4. Why does Jenkins need a Kubernetes authentication token?
+A: its used to check if jenkins is allowed to perform the requested actions. it authenticates.
+
+5. In our Project 3, where did we store the EKS endpoint, CA certificate and token, and how did Jenkins use them?
+A: we stored the EKS endpoint and CA certificate in Jenkins environment variables and the Kubernetes authentication token in Jenkins credentials.
+   The Jenkins pipeline retrieved these values securely
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q13. Kubernetes Deployment rolling updates and rollback
+Scenario:
+
+Your Jenkins pipeline deploys a new version of your Flask application to EKS.
+
+Initially, version v1 is running successfully with two replicas.
+
+Jenkins deploys version v2, but after deployment, users start reporting application errors.
+
+Answer these five questions:
+1. What is a rolling update in Kubernetes?
+A: rolling update is a k8s deployment strategy that graudally replaces old application pods withnew pods without any downtime. It helps maintain application
+   availability during deployments.
+
+2. How does Kubernetes update two replicas without completely stopping the application?
+A: Kubernetes waits for new Pods to become Ready before proceeding with replacing old ones.
+
+3. How would you check whether the rollout was successful?
+A: kubectl rollout status deployment/proj3-deployment -n web-apps
+   kubectl rollout history deployment/proj3-deployment -n web-apps
+
+4. If version v2 is causing errors, how would you roll back to v1?
+A: kubectl rollout undo deployment/proj3-deployment -n web-apps
+   to go to a specific version: kubectl rollout undo deployment/proj3-deployment-n web-apps --to-version=2
+
+5. How would you prevent a bad application version from receiving traffic during deployment?
+A: i will configure readiness probe which makes sure that pod will only receive traffic if it passes the probe. if it doesnt pass then i willmark the pod as not
+   ready and then traffic will not be sent to that pod
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q14. Docker troubleshooting — Container exits immediately
+Target: 3–4 years experience
+Scenario: Your Jenkins pipeline successfully builds a Docker image and pushes it to Docker Hub.
+
+But when you run the container on EC2:
+docker run -d -p 5000:5000 aishwaryalaxmi0599/proj3:latest
+
+The container exits immediately.You run: docker ps
+But the container isn't listed.
+
+Answer these five questions:
+1. What could cause a Docker container to exit immediately?
+2. How would you identify the reason for the container failure?
+3. What's the difference between docker ps and docker ps -a?
+4. How would you check the logs of an exited container?
+5. What is the difference between Docker CMD and ENTRYPOINT?
+Useful commands:
+docker ps -a
+docker logs <container-id>
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q15. Jenkins CI/CD pipeline troubleshooting
+Scenario:
+
+Your Jenkins pipeline has these stages:
+1. Checkout code from GitHub.
+2. Build Docker image.
+3. Push image to Docker Hub.
+4. Deploy application to EKS.
+The first three stages succeed, but the Deploy stage fails.
+
+Answer these five questions:
+1. What are the possible reasons the deployment stage might fail?
+2. How would you verify whether Jenkins can communicate with the EKS API server?
+3. How would you check whether Jenkins has permission to create or update Deployments?
+4. What would you do if Jenkins successfully deploys the application but the new Pods remain Pending?
+5. How would you ensure that a failed deployment doesn't leave the application in a broken state?
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
