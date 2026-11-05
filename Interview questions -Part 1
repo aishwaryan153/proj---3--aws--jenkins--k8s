@@ -1,3 +1,153 @@
+Question 1 – Pods Running but Application Unavailable
+Intermediate · 3–4 years experience
+Imagine your Flask application is deployed on your EKS cluster.
+
+You have:
+- Deployment with 2 replicas.
+- Kubernetes Service.
+- AWS LoadBalancer.
+- /health endpoint configured in your probes.
+You run:
+kubectl get pods -n web-apps
+
+
+Output:
+NAME                                READY   STATUS    RESTARTS
+proj3-deployment-abc123             0/1     Running   0
+proj3-deployment-def456             0/1     Running   0
+
+
+However, users cannot access your application through the LoadBalancer DNS.
+
+Answer these four questions:
+1. Why might the application be unavailable even though both Pods show Running?
+A: it means the containers are running but it has  not passed the readiness check. readiness probe is failing. Application is not listening on the expected port
+   not ready means pod is not considered ready to recieve the service traffic
+
+2. What is the difference between Running and Ready?
+A: Running: container has started and its running, does not guarantee pod is healthy, does not guarantee application is healthy
+   Ready: pod is ready to recieve the application traffic, it  has passed the readiness probe
+    Interview sentence: "Running indicates that the container is executing, whereas Ready indicates that the Pod has passed its readiness checks and is
+    eligible to receive traffic."
+
+3. Which Kubernetes commands would you use to identify the root cause?
+A:  kubectl get pods -n web-apps
+    kubectl describe pod <pod-name> -n web-apps
+    kubectl logs <pod-name> -n web-apps
+    kubectl get endpoints proj3-service -n web-apps
+    kubectl describe svc proj3-service -n web-apps
+    kubectl get events -n web-apps --sort-by=.lastTimestamp ( to check for readiness probe failures)
+
+4. How would you troubleshoot this without randomly restarting or deleting Pods?
+A: check pod status, check pod logs, inspect the events, check /health endpoints, check service end points, check aws lb target health
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Question 3/20 – HPA & CPU autoscaling
+Intermediate–Advanced
+Scenario:
+
+You deployed your Flask application on EKS.
+
+You configured an HPA:
+- Deployment: proj3-deployment
+- HPA name: proj3-hpa
+- Minimum replicas: 2
+- Maximum replicas: 5
+- CPU target: 50%
+You execute:
+kubectl get hpa -n web-apps
+
+
+Output:
+NAME        REFERENCE                  TARGETS   MINPODS   MAXPODS   REPLICAS
+proj3-hpa   Deployment/proj3-deployment 95%/50%   2         5         2
+
+
+Answer these:
+1. What does 95%/50% mean?
+A:  95% = current CPU utilization relative to the CPU requests of the Pods.
+    50% = the target CPU utilization configured in HPA.
+
+2. What should HPA do when CPU utilization reaches 95%, while the target is 50%?
+A: If the target is 50% and actual utilization is 95%, HPA should calculate that more replicas are needed.
+    It will try to scale from 2 towards the maximum of 5, subject to its scaling policies and available resources.
+
+3. Why might HPA still show only 2 replicas despite high cpu utilization?
+A: metrics server is unavailable, hpa reached it max replica count, hpa dint get metrics data
+
+4. What's the difference between Kubernetes HPA and AWS Auto Scaling Groups?
+A: hpa is for scaling pods inside nodes and asg is for scaling nodes. 
+
+5. Which commands would you use to investigate why HPA isn't scaling?
+A:  kubectl describe hpa proj3-hpa -n web-apps (main command)
+    kubectl get hpa -n web-apps
+    kubectl top pods -n web-apps
+    kubectl top nodes
+    kubectl get pods -n kube-system
+    kubectl describe deployment proj3-deployment -n web-apps
+
+Bonus: What happens if Metrics Server is not working in your EKS cluster?
+A: hpa cannot get data from metrics server so hpa doesnt scale up the pods if needed. exisiting pods keep running and hpa may show unknown 
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Question 4/20 – Jenkins + Docker + Kubernetes deployment troubleshooting
+Advanced troubleshooting
+Scenario:
+
+Your Jenkins pipeline has four stages:
+1. Git checkout
+2. Docker build
+3. Docker push
+4. Kubernetes deployment
+Your Docker image:
+aishwaryalaxmi0599/proj3:latest
+
+
+Yesterday, you updated your Flask application code and Jenkins successfully built and pushed the latest image.
+
+However, when users access your application, they still see the old version.
+
+Your Kubernetes Deployment shows:
+NAME              READY   UP-TO-DATE   AVAILABLE
+proj3-deployment  2/2     2            2
+
+
+Answer these:
+1. What could be the reason Kubernetes is still running the old application version?
+A: deployment might not have updated the latest image because when image gets updated in hub then automatically k8s does not build new pods from it. we need to trigger
+   the new pod creation by kubectl set image deployment/proj3-deployment proj3-container=aishwaryalaxmi0599/proj3:v2 -n web-apps command. now image is updated and
+   new pods are created. verify using: kubectl rollout status deployment/proj3-deployment -n web-apps command
+
+2. What's the problem with repeatedly using the latest tag in Docker?
+A: k8s can push new deployment under the same tag thats not the problem but if we do that then k8s might not recognise  that the image content is changed and we also
+   cannot identify which version the application is on. so its best to use diff tags like v1, v2 etc
+
+3. How would you verify which Docker image your running Pods are actually using?
+A: kubectl describe pod <pod-name> -n web-apps (OR) kubectl get pods -n web-apps -o jsonpath='{.items[*].spec.containers[*].image}'
+
+4. What changes would you make to your Jenkins pipeline to ensure the latest application version is deployed reliably?
+A: build a uniquely tagged docker image: docker build -t aishwaryalaxmi0599/proj3:${BUILD_NUMBER} .
+   push this tagged image: docker push aishwaryalaxmi0599/proj3:${BUILD_NUMBER}
+   update the k8s deployment using this tag: kubectl set image deployment/proj3-deployment proj3-container=aishwaryalaxmi0599/proj3:$(BUILD_NUMBER) -n web-apps
+   wait for rollout to complete: kubectl rollout status deployment proj3-deployment -n web-apps
+
+5. Suppose the new deployment causes application errors. How would you roll back to the previous working version?
+A: First check deployment history: kubectl rollout history deployment/proj3-deployment -n web-apps 
+   to roll back to previous version: kubectl rollout undo deployment/proj3-deployment -n web-apps
+   to roll back to a specified version: kubectl rollout undo deployment/proj3-deployment --to-version=2 -n web-apps 
+   verify : kubectl rollout status deployment/proj3-deployment -n web-apps
+   
+Bonus: What's the difference between kubectl apply and kubectl rollout restart?
+A: apply : creates and updates the resources based on manifest file, command: kubectl apply -f dep.yaml
+   rollout restart : restarts pods managed by that deployment, command: kubectl rollout restart deployment/proj3-deployment -n web-apps
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 Question 5/20 – Kubernetes HPA under pressure
 Challenging · 3–4 years level
 Scenario:
@@ -23,8 +173,13 @@ A:  kubectl get po -o wide -n web-apps
     
 
 2. Why might HPA fail to increase the number of Pods even when CPU utilization reaches 90%?
+A: metrics server is not available, max replica count is reached. 
+
 3. Suppose HPA requests 6 Pods, but your cluster has insufficient CPU and memory. What happens?
+A: pods will go to pending state 
+
 4. How would you solve this problem without simply increasing the HPA maximum replicas to 10?
+A: i will increase node size from t3.small to t3.medium. This is vertical scaling of worker nodes
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
