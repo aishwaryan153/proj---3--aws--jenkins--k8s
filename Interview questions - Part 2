@@ -175,10 +175,26 @@ Another application running in a different Pod needs to communicate with your Fl
 
 Questions:
 1. How can one Pod communicate with another Pod in Kubernetes?
+A: in k8s one pod can communicate with the other using pod ip addresses but the pods id changes when the pod restarts
+
 2. Why do we use Kubernetes Services instead of directly communicating with Pod IP addresses?
+A: Pods are temporary. Their IP addresses can change. A Kubernetes Service provides a stable virtual IP and DNS name through
+   which other applications can access a group of Pods. service also distributes traffic to eligible pods
+
 3. What is Kubernetes DNS, and how can one application access another Service using its DNS name?
+A: there are 2 types of dns, internal dns, external load balancer dns
+    internal dns: used to communicate inside the k8s. like a pod trying to access our application internally,uses service dns name
+    external lb dns: used to access the application externally, provided by aws lb infrastructre
+
 4. What is the difference between communication within the same namespace and across different namespaces?
+A: namespace is like a seperation fromother resources. its like a room. main advantage is it provides isolation for the resources. 
+
 5. What is the purpose of CoreDNS in Kubernetes?
+A: core dns is the dns server running inside the k8s. its job is to convert service name to ip addresses.
+   ex: proj3-service.web-apps.svc.cluster.local
+                  |
+                  v
+           Service IP address
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -195,10 +211,35 @@ Your cluster has:
 - Pods running your Flask application
 Questions:
 1. What is the difference between the EKS Control Plane and Worker Nodes?
+A: Control plane: manages the k8s cluster. Contains: api server, scheduler, control manager, etcd
+   Worker node: it manages the control plane. contains: kubelet, kube proxy, container runtime. its the ec2 instances in your setup
+
 2. Where does the Kubernetes API server run in AWS EKS?
+A: for self managed k8s: master node | for aws eks it runs on aws eks managed control plane
+
 3. What happens if one of your EC2 worker nodes crashes?
+A: new worker node created by asg if configured previously, the pods running on that node become un-available and replica set creates new pods on healthy nodes.
+
 4. What is a Managed Node Group, and why do we use it?
+A: An EKS Managed Node Group allows AWS to manage the lifecycle of worker nodes. 
+
 5. What is the difference between eksctl, kubectl, and AWS CLI?
+A: eksctl	Creates and manages EKS clusters and node groups
+   kubectl	Manages Kubernetes resources such as Pods, Deployments and Services
+   aws CLI	Manages AWS resources and services
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q18: Scenario: Your Jenkins server is running on an AWS EC2 instance. You have multiple Jenkins pipelines that need to build Docker images simultaneously.
+1. What is a Jenkins Agent?
+A: jenkins agent is the one that exectes the stages of our pipeline script
+
+2. What is the difference between Jenkins Controller and Agent?
+A: 
+
+3. What is an Executor in Jenkins?
+4. If your Jenkins server has only 2 executors, can 5 pipelines run simultaneously?
+5. Why would companies use separate Jenkins agents instead of running everything on the Jenkins controller?
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
