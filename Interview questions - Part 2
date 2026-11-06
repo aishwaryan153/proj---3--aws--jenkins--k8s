@@ -250,39 +250,46 @@ A: these are like slots.they allow jenkins to execute one task at a time on cont
 A: no. each needs one executor to run simultaneously. if not simultaneously then after one finishes executing, the other one start execution.
 
 5. Why would companies use separate Jenkins agents instead of running everything on the Jenkins controller?
-A: 
-
-
-continue here; 
-5. Why use separate Jenkins Agents?
-Imagine your Jenkins Controller is also building Docker images, running tests, and deploying applications.
-
-This consumes CPU, RAM and disk space.
-
-It can affect Jenkins performance.
-
-Companies use separate agents because:
-1. Performance: Heavy workloads run on separate machines.
-2. Scalability: More agents can be added when workloads increase.
-3. Isolation: Different jobs can run in separate environments.
-4. Security: Build and deployment workloads can be isolated from the controller.
-5. Flexibility: Different agents can have different tools installed.
-For example:
-Agent	Responsibility
-Agent 1	Docker builds
-Agent 2	Testing
-Agent 3	Kubernetes deployments
-
-
-Interview-ready answer to remember
-"A Jenkins Controller manages the pipelines, schedules jobs, and manages agents. Jenkins Agents execute the pipeline tasks assigned by the controller. Executors determine how many tasks can run concurrently on a controller or agent. Using separate agents improves performance, scalability, and workload isolation."
-Quick retest – 3 questions
-Let's see if you understood this.
-1. If the Jenkins Controller goes down, what happens to the pipelines?
-2. If you have 3 Jenkins Agents, each with 2 executors, how many tasks can potentially run simultaneously?
-3. Why shouldn't we run heavy Docker builds directly on the Jenkins Controller?
+A: jenkins controller is doing multiple tasks like building docker images, running tests and deploying applications which consumes alot ofcpu and ram which can
+   affect the performance of jenkins so thats why companies use seperate agents for:
+      1. Performance: Heavy workloads run on separate machines.
+      2. Scalability: More agents can be added when workloads increase.
+      3. Isolation: Different jobs can run in separate environments.
+      4. Security: Build and deployment workloads can be isolated from the controller.
+      5. Flexibility: Different agents can have different tools installed.
+   For example:
+      Agent	Responsibility
+      Agent 1	Docker builds
+      Agent 2	Testing
+      Agent 3	Kubernetes deployments
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+Q19: Scenario: Your Flask application Docker image is 1.5 GB. You want to reduce its size and improve deployment speed.
+1. What is a multi-stage Docker build?
+2. What is the difference between COPY and ADD in Dockerfile?
+3. What is a .dockerignore file, and why do we use it?
+4. Why should we use lightweight base images such as Alpine or slim images?
+5. How would you reduce Docker image size in a production environment?
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q20: You have a Jenkins CI/CD pipeline deployed on AWS.
+
+Your pipeline performs these stages:
+1. Pulls application code from GitHub.
+2. Builds a Docker image.
+3. Pushes the image to Docker Hub.
+4. Deploys the application to AWS EKS.
+5. Exposes the application using a Kubernetes LoadBalancer Service.
+One day, Jenkins shows that all stages have succeeded, but users cannot access the application through the LoadBalancer DNS.
+
+Questions:
+1. How would you troubleshoot this issue step by step?
+2. How would you check whether the application Pods are running and ready?
+3. How would you verify that the Kubernetes Service is correctly routing traffic to the Pods?
+4. How would you identify whether the issue is with Kubernetes, the AWS LoadBalancer, or the application itself?
+5. How would you ensure that the application is accessible and healthy after every Jenkins deployment?
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
