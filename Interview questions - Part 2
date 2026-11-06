@@ -107,14 +107,24 @@ But the container isn't listed.
 
 Answer these five questions:
 1. What could cause a Docker container to exit immediately?
-2. How would you identify the reason for the container failure?
-3. What's the difference between docker ps and docker ps -a?
-4. How would you check the logs of an exited container?
-5. What is the difference between Docker CMD and ENTRYPOINT?
-Useful commands:
-docker ps -a
-docker logs <container-id>
+A: application inside container is crashing, error in startup configuration, missing environment variables
 
+2. How would you identify the reason for the container failure?
+A: docker ps: shows running containers, docker ps -A: to check all stopped containers too. docker logs <container-id> : to get logs of a particular container
+
+3. What's the difference between docker ps and docker ps -a?
+A: docker ps: Lists running containers, docker ps -a: Lists all containers, including stopped ones.
+
+4. How would you check the logs of an exited container?
+A: docker logs <container-id>
+
+5. What is the difference between Docker CMD and ENTRYPOINT?
+A:               CMD                                 ENTRY POINT 
+   . Provides default commands               . defines the main executable
+   . can be overriden easily when running    . remains the main executable unless explicilitely 
+     the container                             overriden 
+   . used to provide default arguments       . used to define what the container runs
+      
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Q15. Jenkins CI/CD pipeline troubleshooting
@@ -129,9 +139,68 @@ The first three stages succeed, but the Deploy stage fails.
 
 Answer these five questions:
 1. What are the possible reasons the deployment stage might fail?
+A: token expired, incorrect certificate, incorrect end point, rbac permissions not wriiten correctly, jenkins cannot reach the api end point, incorrect ns or dep name
+
 2. How would you verify whether Jenkins can communicate with the EKS API server?
+A: if these commands successfully return cluster info then jenkins can communicate with k8s: 
+    kubectl cluster-info
+    kubectl get nodes
+
 3. How would you check whether Jenkins has permission to create or update Deployments?
+A: kubectl auth can-i create deployments \
+  --as=system:serviceaccount:web-apps:jenkins-sa \
+  -n web-apps
+
 4. What would you do if Jenkins successfully deploys the application but the new Pods remain Pending?
+A: inspect the pod: kubectl describe po pod-name -n web-apps
+    Possible reasons: insufficient cpu and memory,no pod slots available, no volume
+
 5. How would you ensure that a failed deployment doesn't leave the application in a broken state?
+A: liveness probe: checks if pod are alive or no and restarts containers that are unhealthy
+   readiness probe:prevents unhealthy pods from recieving the traffic 
+   startup probe: gives slow-starting applications time to initilize. prevents applications from mis-judgement from liveness probe
+   rollback: returns to deployment of previous version
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q16 – Kubernetes Networking & DNS
+New topic
+Scenario:
+
+Your Flask application has 3 Pods running inside the web-apps namespace.
+
+You have a Kubernetes Service named proj3-service.
+
+Another application running in a different Pod needs to communicate with your Flask application.
+
+Questions:
+1. How can one Pod communicate with another Pod in Kubernetes?
+2. Why do we use Kubernetes Services instead of directly communicating with Pod IP addresses?
+3. What is Kubernetes DNS, and how can one application access another Service using its DNS name?
+4. What is the difference between communication within the same namespace and across different namespaces?
+5. What is the purpose of CoreDNS in Kubernetes?
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q17 – AWS EKS Architecture & Node Groups
+New topic
+Scenario:
+
+You created an EKS cluster using eksctl.
+
+Your cluster has:
+- EKS Control Plane
+- 2 EC2 worker nodes (t3.small)
+- Kubernetes Deployments
+- Pods running your Flask application
+Questions:
+1. What is the difference between the EKS Control Plane and Worker Nodes?
+2. Where does the Kubernetes API server run in AWS EKS?
+3. What happens if one of your EC2 worker nodes crashes?
+4. What is a Managed Node Group, and why do we use it?
+5. What is the difference between eksctl, kubectl, and AWS CLI?
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
