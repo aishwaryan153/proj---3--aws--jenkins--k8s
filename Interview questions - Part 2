@@ -267,11 +267,29 @@ A: jenkins controller is doing multiple tasks like building docker images, runni
 
 Q19: Scenario: Your Flask application Docker image is 1.5 GB. You want to reduce its size and improve deployment speed.
 1. What is a multi-stage Docker build?
-2. What is the difference between COPY and ADD in Dockerfile?
-3. What is a .dockerignore file, and why do we use it?
-4. Why should we use lightweight base images such as Alpine or slim images?
-5. How would you reduce Docker image size in a production environment?
+A: a multi stage docker build means having multiple FROM statements in docker file, This reduces image size because unnecessary build tools and dependencies are 
+   not included in the final image
 
+2. What is the difference between COPY and ADD in Dockerfile?
+A: COPY: copies all the files from build context into docker image
+   ADD: Does everything COPY does, but also supports extracting local tar archives and downloading files from URLs.
+   TIP: prefer copy because its more simple and predictible
+
+3. What is a .dockerignore file, and why do we use it?
+A: A .dockerignore file specifies files and directories that Docker should exclude from the build context.
+   This reduces build context size and improves Docker build performance.
+
+4. Why should we use lightweight base images such as Alpine or slim images?
+A: Lightweight base images contain fewer unnecessary packages and dependencies. They reduce Docker image size, storage requirements, download time 
+   and deployment time. They can also reduce the attack surface.
+   Note: Smaller images don't automatically mean significantly lower CPU or RAM usage at runtime.
+
+5. How would you reduce Docker image size in a production environment?
+A:    1. Use lightweight base images such as Python Slim.
+      2. Use multi-stage Docker builds.
+      3. Use .dockerignore to exclude unnecessary files.
+      4. Remove unnecessary packages and dependencies.
+      5. Combine installation steps and clean package caches.
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Q20: You have a Jenkins CI/CD pipeline deployed on AWS.
@@ -286,9 +304,38 @@ One day, Jenkins shows that all stages have succeeded, but users cannot access t
 
 Questions:
 1. How would you troubleshoot this issue step by step?
+A: Check whether Pods are running and ready.
+   Check Service and its endpoints.
+   Check whether the AWS LoadBalancer was provisioned.
+   Check Target Group health.
+   Check security groups and networking.
+   Test application access through LoadBalancer DNS.
+
 2. How would you check whether the application Pods are running and ready?
+A: kubectl get pods -o wide -n web-apps
+   kubectl describe pod <pod-name> -n web-apps
+   kubectl logs <pod-name> -n web-apps
+
 3. How would you verify that the Kubernetes Service is correctly routing traffic to the Pods?
+A: kubectl get endpoints -n web-apps
+   kubectl describe svc <service-name> -n web-apps
+
 4. How would you identify whether the issue is with Kubernetes, the AWS LoadBalancer, or the application itself?
+A:      Component	               What to check
+     Kubernetes Pods	         kubectl get pods
+     Application                	kubectl logs
+     Service	                  kubectl describe svc
+     Endpoints	               kubectl get endpoints
+     AWS LoadBalancer	            AWS console
+     Target Group	               Target health
+     Networking         	Security groups and health-check ports
+
 5. How would you ensure that the application is accessible and healthy after every Jenkins deployment?
+A: 1. Configure readiness and liveness probes.
+   2. Ensure Service selectors match Pod labels.
+   3. Verify Target Group health checks.
+   4. Configure correct security groups and ports.
+   5. Add application health monitoring and alerts.
+   6. Verify application accessibility after every deployment.
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
